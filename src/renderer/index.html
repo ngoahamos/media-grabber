@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Media Grabber</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Draggable strip so the frameless macOS title bar can still move the window -->
+  <div class="titlebar-drag"></div>
+
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd">
+            <path d="M9 2.5A1.5 1.5 0 0 0 7.5 4v7H5.2a1 1 0 0 0-.75 1.66l6.8 7.72a1 1 0 0 0 1.5 0l6.8-7.72A1 1 0 0 0 18.8 11h-2.3V4A1.5 1.5 0 0 0 15 2.5Zm1.35 5.15v5.7L14.6 10.5Z" />
+            <path d="M4 20.5h16V23H4Z" />
+          </svg>
+        </div>
+        <div>
+          <h1>Media Grabber</h1>
+          <p class="brand-sub">Desktop media downloader</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div id="binStatus" class="status-pill status-pill--checking" title="Checking bundled tools">
+          <span class="dot"></span><span id="binStatusText">Checking tools…</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="workspace">
+        <section class="download-pane" aria-labelledby="downloadHeading">
+          <div class="pane-intro">
+            <span class="eyebrow">New download</span>
+            <h2 id="downloadHeading">Save media from a link</h2>
+            <p>Paste a video URL, choose an output, and download it locally.</p>
+          </div>
+
+          <div class="url-section">
+            <label class="label" for="url">Media URL</label>
+            <div class="url-row">
+              <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+                  <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19" />
+                </svg>
+                <input id="url" type="url" spellcheck="false" autocomplete="off"
+                       placeholder="Paste a video link" />
+                <button id="pasteBtn" class="paste-btn" type="button" title="Paste from clipboard">Paste</button>
+              </div>
+              <button id="analyzeBtn" class="btn btn--primary" type="button">
+                <span class="btn-label">Analyze</span>
+                <span class="spinner" hidden></span>
+              </button>
+            </div>
+            <p class="hint">Press <kbd>Enter</kbd> to analyze · Playlists use the first video</p>
+          </div>
+
+          <section id="preview" class="preview" aria-label="Media preview" hidden>
+            <div class="preview-thumb">
+              <img id="pvThumb" alt="" />
+              <span id="pvDuration" class="duration-badge"></span>
+            </div>
+            <div class="preview-body">
+              <h3 id="pvTitle" class="preview-title">—</h3>
+              <div class="preview-meta">
+                <span id="pvUploader" class="chip"></span>
+                <span id="pvSource" class="chip chip--muted"></span>
+                <span id="pvBest" class="chip chip--muted"></span>
+              </div>
+            </div>
+          </section>
+
+          <div class="options">
+            <div class="option">
+              <span class="label">Format</span>
+              <div class="segmented" role="radiogroup" aria-label="Format">
+                <button class="seg is-active" data-format="video" role="radio" aria-checked="true" type="button">Video <span>MP4</span></button>
+                <button class="seg" data-format="audio" role="radio" aria-checked="false" type="button">Audio <span>MP3</span></button>
+              </div>
+            </div>
+
+            <div class="option" id="qualityOption">
+              <label class="label" for="quality">Quality</label>
+              <select id="quality" class="select">
+                <option value="best">Best available</option>
+                <option value="1080">1080p</option>
+                <option value="720">720p</option>
+                <option value="480">480p</option>
+              </select>
+            </div>
+
+            <div class="option option--wide">
+              <span class="label">Destination</span>
+              <div class="folder-row">
+                <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+                <span id="folderPath" class="folder-path" title="">…</span>
+                <button id="chooseFolderBtn" class="text-btn" type="button">Change</button>
+                <button id="openFolderBtn" class="icon-btn folder-open" type="button" title="Open folder" aria-label="Open folder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 5h5v5M19 5l-8 8" />
+                    <path d="M18 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cookies-row">
+            <label class="switch">
+              <input id="useCookies" type="checkbox" />
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span class="switch-copy">
+                <span class="switch-label">Browser cookies</span>
+                <span class="switch-description">For private or age-restricted media</span>
+              </span>
+            </label>
+            <select id="cookieBrowser" class="select select--sm" disabled>
+              <option value="chrome">Chrome</option>
+              <option value="edge">Edge</option>
+              <option value="firefox">Firefox</option>
+              <option value="brave">Brave</option>
+              <option value="chromium">Chromium</option>
+              <option value="opera">Opera</option>
+              <option value="vivaldi">Vivaldi</option>
+              <option value="safari">Safari</option>
+            </select>
+          </div>
+
+          <div class="actions">
+            <button id="downloadBtn" class="btn btn--primary btn--download" type="button" disabled>Download</button>
+            <button id="cancelBtn" class="btn btn--danger btn--download" type="button" hidden>Cancel</button>
+          </div>
+
+          <section id="progressCard" class="progress-card" aria-label="Download progress" hidden>
+            <div class="progress-head">
+              <span id="progressPhase" class="progress-phase">Starting…</span>
+              <span id="progressPct" class="progress-pct">0%</span>
+            </div>
+            <div class="progress-track"><div id="progressBar" class="progress-bar" style="width: 0%"></div></div>
+            <div class="progress-foot">
+              <span id="progressSize">—</span><span id="progressSpeed">—</span><span id="progressEta">—</span>
+            </div>
+            <details class="log">
+              <summary>Technical details</summary>
+              <pre id="logBox" class="log-box"></pre>
+            </details>
+          </section>
+        </section>
+
+        <aside class="history-pane" aria-labelledby="historyHeading">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow">Library</span>
+              <h2 id="historyHeading" class="section-title">Recent downloads</h2>
+            </div>
+            <button id="clearHistoryBtn" class="text-btn" type="button">Clear</button>
+          </div>
+          <ul id="historyList" class="history"></ul>
+          <div id="historyEmpty" class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v10m0 0 4-4m-4 4-4-4" />
+              <path d="M5 17v2h14v-2" />
+            </svg>
+            <p>No downloads yet</p>
+            <span>Your completed files will appear here.</span>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast host -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

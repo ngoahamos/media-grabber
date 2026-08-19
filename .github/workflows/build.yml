@@ -1,0 +1,95 @@
+name: Build desktop apps
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-latest
+            platform: darwin
+            command: npm run build:mac
+            artifact_name: media-grabber-macos
+            artifact_path: |
+              dist/*.dmg
+              dist/*.zip
+
+          - name: Windows
+            os: windows-latest
+            platform: win32
+            command: npm run build:win
+            artifact_name: media-grabber-windows
+            artifact_path: |
+              dist/*.exe
+
+          - name: Linux
+            os: ubuntu-latest
+            platform: linux
+            command: npm run build:linux
+            artifact_name: media-grabber-linux
+            artifact_path: |
+              dist/*.AppImage
+              dist/*.deb
+
+    env:
+      # CI produces unsigned artifacts. Distribution signing can be added later
+      # with platform-specific secrets without changing the build matrix.
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download bundled tools
+        run: npm run setup:binaries -- --platform ${{ matrix.platform }}
+
+      - name: Verify bundled tools
+        run: >-
+          node -e "const fs=require('node:fs');
+          const dir='bin/${{ matrix.platform }}';
+          const files=process.platform==='win32'
+          ? ['yt-dlp.exe','ffmpeg.exe','ffprobe.exe']
+          : ['yt-dlp','ffmpeg','ffprobe'];
+          for(const file of files){
+          if(!fs.existsSync(dir+'/'+file))throw new Error('Missing bundled tool: '+dir+'/'+file)}"
+
+      - name: Build installers
+        run: ${{ matrix.command }}
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 14

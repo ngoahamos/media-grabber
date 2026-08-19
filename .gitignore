@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+out/
+
+# bundled third-party binaries (fetched with `npm run setup:binaries`)
+bin/*/*
+!bin/*/.gitkeep
+
+# logs & OS cruft
+npm-debug.log*
+yarn-error.log*
+*.log
+.DS_Store
+Thumbs.db
+
+# editors
+.vscode/
+.idea/
+.claude

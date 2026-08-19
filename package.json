@@ -1,0 +1,84 @@
+{
+  "name": "yt-downloader",
+  "productName": "Media Grabber",
+  "version": "1.0.0",
+  "description": "Cross-platform desktop downloader for YouTube, Facebook and 1000+ other sites, powered by yt-dlp and ffmpeg.",
+  "author": {
+    "name": "candisturb",
+    "email": "candisturb@gmail.com"
+  },
+  "license": "MIT",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "setup:binaries": "node scripts/setup-binaries.js",
+    "make:icon": "node scripts/make-icon.js",
+    "postinstall": "electron-builder install-app-deps",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {},
+  "build": {
+    "appId": "com.candisturb.mediagrabber",
+    "productName": "Media Grabber",
+    "copyright": "Copyright © 2026 candisturb",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon-v2.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extraResources": [
+        { "from": "bin/darwin", "to": "bin", "filter": ["**/*"] }
+      ]
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon-v2.png",
+      "extraResources": [
+        { "from": "bin/win32", "to": "bin", "filter": ["**/*"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Media Grabber"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "AudioVideo",
+      "icon": "build/icon-v2.png",
+      "maintainer": "candisturb <candisturb@gmail.com>",
+      "extraResources": [
+        { "from": "bin/linux", "to": "bin", "filter": ["**/*"] }
+      ]
+    }
+  }
+}
