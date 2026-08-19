@@ -84,7 +84,9 @@ jobs:
           if(!fs.existsSync(dir+'/'+file))throw new Error('Missing bundled tool: '+dir+'/'+file)}"
 
       - name: Build installers
-        run: ${{ matrix.command }}
+        # Artifacts are uploaded by the next step; electron-builder must not
+        # auto-detect CI/tag publishing and request a GitHub token.
+        run: ${{ matrix.command }} -- --publish never
 
       - name: Upload installers
         uses: actions/upload-artifact@v7

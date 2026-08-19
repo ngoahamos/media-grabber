@@ -5,7 +5,7 @@
   "description": "Cross-platform desktop downloader for YouTube, Facebook and 1000+ other sites, powered by yt-dlp and ffmpeg.",
   "author": {
     "name": "Amos Ngoah",
-    "email": "candisturb@gmail.com"
+    "email": "lifesoftdev@gmail.com"
   },
   "license": "MIT",
   "main": "src/main/main.js",
