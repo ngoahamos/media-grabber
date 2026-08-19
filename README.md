@@ -13,6 +13,21 @@ YouTube, Facebook and the [1000+ other sites yt-dlp supports](https://github.com
 
 ---
 
+## Download
+
+Prebuilt installers from GitHub Actions run `32272826659`:
+
+| Platform | Download |
+| --- | --- |
+| Windows | [Download for Windows](https://github.com/ngoahamos/media-grabber/actions/runs/32272826659/artifacts/9372909748) |
+| macOS | [Download for macOS](https://github.com/ngoahamos/media-grabber/actions/runs/32272826659/artifacts/9372896648) |
+| Linux | [Download for Linux](https://github.com/ngoahamos/media-grabber/actions/runs/32272826659/artifacts/9372928687) |
+
+> These are unsigned CI builds. GitHub may require you to sign in, and workflow
+> artifacts expire after the configured retention period.
+
+---
+
 ## Quick start
 
 ```bash
