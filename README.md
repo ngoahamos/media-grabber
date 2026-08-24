@@ -1,15 +1,30 @@
 # Media Grabber
 
 A cross-platform Electron desktop app that downloads video and audio from
-YouTube, Facebook and the [1000+ other sites yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
+YouTube, Facebook and the [1000+ other sites yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md),
+then trims and joins the results locally.
+
+**Download tab**
 
 - **MP4 video** at best available quality, or capped at 1080p / 720p / 480p
 - **MP3 audio** extraction at the highest bitrate the source allows
 - Live progress bar parsed straight from yt-dlp, with speed and ETA
 - Video title, channel, duration and thumbnail preview before you commit
-- Download history with play / reveal-in-folder / remove actions
 - Choosable download folder, cancellable downloads, optional browser cookies
-- Dark UI, no telemetry, no external runtime dependencies
+
+**Edit tab**
+
+- **Trim** a clip out of any local file, with an inline preview player and
+  scrubbable start/end handles
+- **Join** several files into one, in an order you can rearrange
+- Either operation runs as a fast stream copy or a precise re-encode, and the
+  app tells you which one your files actually allow
+- Files arrive by drag-and-drop, a file dialog, or the **Trim** action on any
+  library entry
+
+Shared: a library of everything produced — downloaded or edited — with play /
+reveal-in-folder / remove actions. Dark UI, no telemetry, no external runtime
+dependencies, and nothing ever leaves the machine.
 
 ---
 
@@ -62,6 +77,7 @@ yt-downloader/
     │   ├── main.js              # windows, security policy, lifecycle
     │   ├── ipc.js               # every renderer-callable operation
     │   ├── ytdlp.js             # yt-dlp wrapper: args, spawn, parsing
+    │   ├── ffmpeg.js            # ffmpeg/ffprobe wrapper: probe, trim, join
     │   ├── binaries.js          # per-platform binary resolution
     │   └── store.js             # settings + history JSON store
     ├── preload/preload.js       # contextBridge API surface
@@ -153,6 +169,43 @@ browser cookies'…"* rather than a stack trace. Anything unrecognised falls bac
 to the last `ERROR:` line, so nothing is ever swallowed. The raw output is
 always available in the collapsible log drawer.
 
+### Trimming and joining — `src/main/ffmpeg.js`
+
+`ffprobe` reads each file's duration and stream layout up front; that is what
+fills in the codec/resolution line under a file, sets the trim range, and
+decides whether a join can copy streams.
+
+Both operations run in one of two modes:
+
+| Mode | Trim | Join |
+| --- | --- | --- |
+| **copy** | `-ss` / `-t` around `-c copy` — instant and lossless, but the cut lands on the nearest keyframe *before* the requested start | concat **demuxer** over a temp list file — instant, and requires every input to share codecs, dimensions and sample rate |
+| **encode** | same seek, re-encoded — frame-exact, slower, slightly lossy | concat **filter**, preceded by a normalising stage that scales, pads, and resamples every input into one common format |
+
+That normalising stage is the part worth knowing about: the concat filter is no
+more forgiving than the demuxer about mismatched inputs and refuses outright if
+two streams differ in size, SAR or sample format. Scaling and padding each
+input to the largest frame among them (letterboxed, never stretched) is what
+makes the encode path work with any mix of files.
+
+`joinCompatibility()` decides which mode is even offered. Mixed codecs downgrade
+the UI to re-encode with an explanation; a mix of video-bearing and audio-only
+files is rejected outright rather than silently dropping a stream.
+
+**Progress** comes from `-progress pipe:1`, whose `out_time` is divided by the
+known total duration. `out_time` is parsed rather than `out_time_ms`, whose unit
+has been microseconds rather than milliseconds in ffmpeg for years. A file whose
+container carries no duration gets an indeterminate bar instead of a wrong
+percentage.
+
+A canceled or failed run deletes its partial output, so a truncated file never
+appears in the library, and the temp concat list is always cleaned up.
+
+One sharp edge the code guards explicitly: seeking past the end of a file does
+not fail — ffmpeg quietly rewinds and copies the whole thing. A "trim" that
+returned the entire source would look like a successful operation, so the start
+time is validated against a known duration before the job is built.
+
 ### Security model
 
 The renderer is fully sandboxed and has no Node access at all:
@@ -163,11 +216,17 @@ contextIsolation: true, nodeIntegration: false, sandbox: true
 
 Everything it can do is the explicit list in `src/preload/preload.js`, exposed
 via `contextBridge`. The main process validates on the way in — URLs must be
-`http(s)`, the download folder must exist and be writable, and history paths are
-resolved before being handed to the shell. A CSP is applied to all responses
-(`img-src` allows `https:` so thumbnails load from the source CDN; scripts are
-restricted to the app bundle), external links open in the system browser, and
-in-app navigation away from the bundled UI is blocked.
+`http(s)`, the download folder must exist and be writable, media paths must
+exist and carry a known media extension, and history paths are resolved before
+being handed to the shell. A CSP is applied to all responses (`img-src` allows
+`https:` so thumbnails load from the source CDN; `media-src` allows `file:` for
+the editor's preview player; scripts are restricted to the app bundle), external
+links open in the system browser, and in-app navigation away from the bundled UI
+is blocked.
+
+A dropped file carries no usable path in an isolated world, so the drop zones go
+through `webUtils.getPathForFile` in the preload — the only supported route, and
+one that stays out of page scope.
 
 ---
 
@@ -246,9 +305,21 @@ into the header pill when it arrives, so a slow binary is never reported as a
 missing one. A `pip`/`brew`-installed yt-dlp on `PATH` starts much faster if
 this affects you.
 
-**ffmpeg is required**, not optional: merging separate video and audio streams
-and producing MP3 both go through it. The app refuses to start a download
-without it and says so plainly.
+**ffmpeg is required**, not optional: merging separate video and audio streams,
+producing MP3, and the whole Edit tab all go through it. The app refuses to
+start without it and says so plainly. The editor additionally needs `ffprobe`
+but *not* yt-dlp, so it stays usable on an install where only the downloader's
+binary is missing — the two tool checks are tracked separately.
+
+**Where edited files land.** Beside their source file, named `clip (trim).mp4`
+or `clip (joined).mp4`, uniquified with a counter rather than overwriting. If
+that folder is not writable, the configured download folder is used instead.
+Nothing is written in place: the source file is never modified.
+
+**Encoder availability.** The precise/re-encode mode needs `libx264` and `aac`
+(or `libvpx-vp9` + `libopus` for WebM output). The builds fetched by
+`setup:binaries` include them; a minimal ffmpeg on `PATH` may not, which surfaces
+as a "missing encoder" message pointing you at the fast mode.
 
 **Licensing.** The ffmpeg builds fetched by the setup script are GPL builds,
 which makes a distributed bundle GPL-licensed. Swap in an LGPL build if that

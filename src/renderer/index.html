@@ -34,7 +34,31 @@
 
     <main class="content">
       <div class="workspace">
-        <section class="download-pane" aria-labelledby="downloadHeading">
+        <div class="main-col">
+          <nav class="tabs" role="tablist" aria-label="Workspace">
+            <button id="tabDownload" class="tab is-active" type="button" role="tab"
+                    aria-selected="true" aria-controls="downloadPane" data-tab="download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5" />
+                <path d="M4 17v3h16v-3" />
+              </svg>
+              Download
+            </button>
+            <button id="tabEdit" class="tab" type="button" role="tab"
+                    aria-selected="false" aria-controls="editPane" data-tab="edit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="6" cy="7" r="2.6" />
+                <circle cx="6" cy="17" r="2.6" />
+                <path d="M8.3 8.4 20 17M8.3 15.6 20 7" />
+              </svg>
+              Edit
+            </button>
+          </nav>
+
+        <section id="downloadPane" class="download-pane" role="tabpanel"
+                 aria-labelledby="tabDownload">
           <div class="pane-intro">
             <span class="eyebrow">New download</span>
             <h2 id="downloadHeading">Save media from a link</h2>
@@ -157,6 +181,129 @@
             </details>
           </section>
         </section>
+
+        <section id="editPane" class="edit-pane" role="tabpanel" aria-labelledby="tabEdit" hidden>
+          <div class="pane-intro">
+            <span class="eyebrow">Editor</span>
+            <h2>Trim and join media</h2>
+            <p>Cut a clip out of a file, or stitch several files into one. Nothing is uploaded.</p>
+          </div>
+
+          <div id="editUnavailable" class="join-note join-note--error" hidden></div>
+
+          <div class="option">
+            <span class="label">Operation</span>
+            <div class="segmented" role="radiogroup" aria-label="Operation">
+              <button class="seg is-active" data-op="trim" role="radio" aria-checked="true" type="button">Trim</button>
+              <button class="seg" data-op="join" role="radio" aria-checked="false" type="button">Join</button>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------------- Trim -->
+          <div id="trimView" class="op-view">
+            <div id="trimDrop" class="dropzone" tabindex="0" role="button"
+                 aria-label="Choose a file to trim">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 16V4m0 0L8 8m4-4 4 4" />
+                <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
+              </svg>
+              <p>Drop a video or audio file here</p>
+              <span>or click to choose one</span>
+            </div>
+
+            <div id="trimFile" class="file-card" hidden>
+              <div class="file-card-head">
+                <div class="file-card-body">
+                  <div id="trimName" class="file-name">—</div>
+                  <div id="trimSpecs" class="file-specs"></div>
+                </div>
+                <button id="trimClearBtn" class="text-btn" type="button">Change</button>
+              </div>
+
+              <video id="trimPreview" class="preview-player" controls preload="metadata"></video>
+
+              <div class="range-grid">
+                <div class="range-field">
+                  <label class="label" for="trimStart">Start</label>
+                  <div class="time-row">
+                    <input id="trimStart" class="time-input" type="text" spellcheck="false"
+                           inputmode="numeric" value="0:00" />
+                    <button id="trimStartHere" class="text-btn" type="button"
+                            title="Use the preview's current position">Set</button>
+                  </div>
+                </div>
+                <div class="range-field">
+                  <label class="label" for="trimEnd">End</label>
+                  <div class="time-row">
+                    <input id="trimEnd" class="time-input" type="text" spellcheck="false"
+                           inputmode="numeric" value="0:00" />
+                    <button id="trimEndHere" class="text-btn" type="button"
+                            title="Use the preview's current position">Set</button>
+                  </div>
+                </div>
+                <div class="range-field range-field--summary">
+                  <span class="label">Selection</span>
+                  <div id="trimSummary" class="range-summary">—</div>
+                </div>
+              </div>
+
+              <div class="scrub">
+                <input id="trimStartRange" class="scrub-range" type="range"
+                       min="0" max="1000" step="1" value="0" aria-label="Start position" />
+                <input id="trimEndRange" class="scrub-range" type="range"
+                       min="0" max="1000" step="1" value="1000" aria-label="End position" />
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------------- Join -->
+          <div id="joinView" class="op-view" hidden>
+            <div id="joinDrop" class="dropzone" tabindex="0" role="button"
+                 aria-label="Add files to join">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h10" />
+              </svg>
+              <p>Drop files here to join them</p>
+              <span>or click to add — they are joined top to bottom</span>
+            </div>
+
+            <ul id="joinList" class="join-list"></ul>
+            <div id="joinNote" class="join-note" hidden></div>
+          </div>
+
+          <!-- ------------------------------------------------------ Shared UI -->
+          <div class="option option--wide edit-mode-row">
+            <label class="label" for="editMode">Quality mode</label>
+            <select id="editMode" class="select">
+              <option value="copy">Fast — copy streams, no quality loss</option>
+              <option value="encode">Precise — re-encode (exact cuts, any format)</option>
+            </select>
+            <p id="editModeHint" class="hint">Cuts land on the nearest keyframe before your start time.</p>
+          </div>
+
+          <div class="actions">
+            <button id="editRunBtn" class="btn btn--primary btn--download" type="button" disabled>Trim</button>
+            <button id="editCancelBtn" class="btn btn--danger btn--download" type="button" hidden>Cancel</button>
+          </div>
+
+          <section id="editProgressCard" class="progress-card" aria-label="Editing progress" hidden>
+            <div class="progress-head">
+              <span id="editPhase" class="progress-phase">Starting…</span>
+              <span id="editPct" class="progress-pct">0%</span>
+            </div>
+            <div class="progress-track"><div id="editBar" class="progress-bar" style="width: 0%"></div></div>
+            <div class="progress-foot">
+              <span id="editTime">—</span><span id="editSpeed">—</span><span id="editTarget">—</span>
+            </div>
+            <details class="log">
+              <summary>Technical details</summary>
+              <pre id="editLogBox" class="log-box"></pre>
+            </details>
+          </section>
+        </section>
+        </div>
 
         <aside class="history-pane" aria-labelledby="historyHeading">
           <div class="section-head">

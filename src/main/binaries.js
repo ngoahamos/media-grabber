@@ -107,6 +107,11 @@ function ffmpegPath() {
   return resolve('ffmpeg').path;
 }
 
+/** @returns {string|null} absolute path to ffprobe, or null when unavailable. */
+function ffprobePath() {
+  return resolve('ffprobe').path;
+}
+
 /**
  * Health report shown in the app's status strip.
  *
@@ -165,4 +170,13 @@ async function versions() {
   return { ytDlp: ytVersion, ffmpeg: ffVersion };
 }
 
-module.exports = { binDir, bundledPath, resolve, ytDlpPath, ffmpegPath, status, versions };
+module.exports = {
+  binDir,
+  bundledPath,
+  resolve,
+  ytDlpPath,
+  ffmpegPath,
+  ffprobePath,
+  status,
+  versions,
+};

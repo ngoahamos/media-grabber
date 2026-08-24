@@ -9,7 +9,7 @@
  * renderer can never reach `ipcRenderer` directly.
  */
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 /**
  * Wrap `ipcRenderer.on` so the renderer receives only the payload, never the
@@ -39,6 +39,22 @@ contextBridge.exposeInMainWorld('api', {
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
   cancelDownload: (id) => ipcRenderer.invoke('download:cancel', { id }),
 
+  /* editing -------------------------------------------------------------- */
+  pickMediaFiles: (multiple) => ipcRenderer.invoke('edit:pickFiles', { multiple }),
+  probeMedia: (filePaths) => ipcRenderer.invoke('edit:probe', { filePaths }),
+  startTrim: (payload) => ipcRenderer.invoke('edit:trim', payload),
+  startJoin: (payload) => ipcRenderer.invoke('edit:join', payload),
+  cancelEdit: (id) => ipcRenderer.invoke('edit:cancel', { id }),
+  // A dropped File carries no usable path in an isolated world; this is the
+  // only supported way to recover one, and it stays in the preload.
+  pathForFile: (file) => {
+    try {
+      return webUtils.getPathForFile(file) || null;
+    } catch {
+      return null;
+    }
+  },
+
   /* history -------------------------------------------------------------- */
   historyList: () => ipcRenderer.invoke('history:list'),
   historyRemove: (id) => ipcRenderer.invoke('history:remove', { id }),
@@ -56,4 +72,11 @@ contextBridge.exposeInMainWorld('api', {
   onError: subscribe('download:error'),
   onCanceled: subscribe('download:canceled'),
   onLog: subscribe('download:log'),
+
+  /* live edit events ----------------------------------------------------- */
+  onEditProgress: subscribe('edit:progress'),
+  onEditDone: subscribe('edit:done'),
+  onEditError: subscribe('edit:error'),
+  onEditCanceled: subscribe('edit:canceled'),
+  onEditLog: subscribe('edit:log'),
 });

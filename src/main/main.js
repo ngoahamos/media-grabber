@@ -89,7 +89,9 @@ function applyCsp() {
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: https:",
-            "media-src 'self'",
+            // file: is needed by the editor's preview player, which plays back
+          // a local file the user picked in a dialog or dropped on the window.
+          "media-src 'self' file:",
             "connect-src 'self'",
             "font-src 'self'",
             "object-src 'none'",
