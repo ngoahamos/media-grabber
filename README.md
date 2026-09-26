@@ -267,6 +267,11 @@ also works during development.
 | `npm run build:mac` | `.dmg` + `.zip`, x64 and arm64 |
 | `npm run build:linux` | AppImage + `.deb` |
 
+npx electron-builder --mac --arm64
+npx electron-builder --mac --x64
+npm run build:win
+npm run build:linux
+
 Populate `bin/<platform>/` for the target **before** building — electron-builder
 copies whatever is there at build time.
 
@@ -294,6 +299,19 @@ the cookie database of a locally installed browser. Chromium-based browsers
 usually need to be **fully closed** first, and on macOS the OS may prompt for
 keychain access. `cookieArgs()` also accepts a `cookieFile` for the
 `--cookies <file>` (Netscape format) route if you prefer exporting them.
+
+**YouTube 403 errors.** YouTube requires JavaScript challenges to be solved
+before media can be downloaded. Both Analyze and Download explicitly use
+Electron's built-in Node runtime, so users do not need a separate Node or Deno
+installation. The child environment sets `ELECTRON_RUN_AS_NODE=1`; packaged
+builds must keep Electron's `RunAsNode` fuse enabled. Official yt-dlp binaries
+already include the EJS challenge solver scripts (see the
+[yt-dlp EJS guide](https://github.com/yt-dlp/yt-dlp/wiki/EJS)).
+If YouTube changes and downloads start returning 403, refresh the bundled
+downloader with `npm run setup:binaries -- --only yt-dlp --force`, then restart
+the app. Rebuild installers to ship the updated binary to other users. If a
+specific video still fails, verify it plays in your browser and try browser
+cookies for videos requiring a signed-in session.
 
 **Slow yt-dlp startup.** The official macOS/Linux yt-dlp binaries are
 PyInstaller bundles that unpack and import a few thousand extractor modules on

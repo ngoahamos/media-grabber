@@ -53,7 +53,7 @@
                 <circle cx="6" cy="17" r="2.6" />
                 <path d="M8.3 8.4 20 17M8.3 15.6 20 7" />
               </svg>
-              Edit
+              Trim &amp; Join
             </button>
           </nav>
 
@@ -184,9 +184,9 @@
 
         <section id="editPane" class="edit-pane" role="tabpanel" aria-labelledby="tabEdit" hidden>
           <div class="pane-intro">
-            <span class="eyebrow">Editor</span>
-            <h2>Trim and join media</h2>
-            <p>Cut a clip out of a file, or stitch several files into one. Nothing is uploaded.</p>
+            <span class="eyebrow">Video editor</span>
+            <h2>Trim or join videos</h2>
+            <p>Cut a clip from one video or add several videos to a single timeline. Audio files work too, and nothing is uploaded.</p>
           </div>
 
           <div id="editUnavailable" class="join-note join-note--error" hidden></div>
@@ -208,8 +208,8 @@
                 <path d="M12 16V4m0 0L8 8m4-4 4 4" />
                 <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
               </svg>
-              <p>Drop a video or audio file here</p>
-              <span>or click to choose one</span>
+              <p>Drop a video here to trim it</p>
+              <span>or click to choose one · audio files are supported too</span>
             </div>
 
             <div id="trimFile" class="file-card" hidden>
@@ -260,13 +260,13 @@
           <!-- ---------------------------------------------------------- Join -->
           <div id="joinView" class="op-view" hidden>
             <div id="joinDrop" class="dropzone" tabindex="0" role="button"
-                 aria-label="Add files to join">
+                 aria-label="Add videos to join">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M4 7h16M4 12h16M4 17h10" />
               </svg>
-              <p>Drop files here to join them</p>
-              <span>or click to add — they are joined top to bottom</span>
+              <p>Drop videos here to join them</p>
+              <span>or click to add more · videos are joined top to bottom</span>
             </div>
 
             <ul id="joinList" class="join-list"></ul>

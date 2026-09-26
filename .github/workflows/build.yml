@@ -1,13 +1,9 @@
 name: Build desktop apps
 
+# Builds run only when triggered manually from the Actions tab
+# (Build desktop apps → Run workflow) or via `gh workflow run build.yml`.
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - master
-    tags:
-      - "v*"
 
 permissions:
   contents: read

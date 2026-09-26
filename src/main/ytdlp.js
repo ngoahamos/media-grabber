@@ -47,10 +47,19 @@ function baseArgs() {
     '--ignore-config',
     '--no-colors',
     '--no-playlist',
+    // Electron already ships a supported Node runtime. Point yt-dlp at it
+    // explicitly so packaged apps do not depend on the user's shell PATH.
+    '--no-js-runtimes',
+    '--js-runtimes', `node:${process.execPath}`,
     '--socket-timeout', '20',
     '--retries', '10',
     '--fragment-retries', '10',
   ];
+}
+
+/** Let yt-dlp launch this executable as Node instead of opening another app. */
+function processEnv() {
+  return { ...process.env, ELECTRON_RUN_AS_NODE: '1' };
 }
 
 /**
@@ -62,6 +71,20 @@ function cookieArgs(opts = {}) {
   if (!opts.useCookies) return [];
   if (opts.cookieFile) return ['--cookies', opts.cookieFile];
   return ['--cookies-from-browser', opts.cookieBrowser || 'chrome'];
+}
+
+/**
+ * Failures caused by the borrowed browser cookies themselves: a stale or
+ * rotated YouTube session ("The page needs to be reloaded") or an unreadable
+ * cookie store. Public videos work fine without cookies, so these are worth
+ * one retry with cookies turned off.
+ */
+const COOKIE_FAILURE =
+  /page needs to be reloaded|could not find .* cookies database|could not copy .* cookie database|unable to (open|read) .* cookies|failed to decrypt .* cookie/i;
+
+/** True when a cookie-backed run failed because of the cookies. */
+function shouldRetryWithoutCookies(opts, stderr) {
+  return Boolean(opts.useCookies) && COOKIE_FAILURE.test(stderr || '');
 }
 
 /**
@@ -134,8 +157,12 @@ function friendlyError(stderr) {
   const text = (stderr || '').trim();
   const rules = [
     [/Unsupported URL/i, 'That link is not supported. Check the URL and try again.'],
+    [/HTTP(?: Error)? 403\b/i,
+      'The site refused the media download (403). Update the app and retry. If the video requires sign-in, enable "Use browser cookies" with a browser that can play it.'],
     [/is not a valid URL|Unable to extract|Unable to download webpage/i,
       'Could not read that page. The link may be wrong, private, or region-blocked.'],
+    [/page needs to be reloaded/i,
+      'YouTube rejected the session. Turn off "Use browser cookies", or sign out and back in to YouTube in that browser.'],
     [/Sign in to confirm|confirm you.?re not a bot|Private video|members-only|login required|requires authentication/i,
       'This video needs a signed-in session. Turn on "Use browser cookies" and pick the browser you are logged into.'],
     [/Video unavailable|has been removed|no longer available/i, 'The video is unavailable or has been removed.'],
@@ -186,8 +213,11 @@ function analyze(url, opts = {}) {
     execFile(
       bin,
       args,
-      { maxBuffer: 64 * 1024 * 1024, timeout: 90_000, windowsHide: true },
+      { maxBuffer: 64 * 1024 * 1024, timeout: 90_000, windowsHide: true, env: processEnv() },
       (err, stdout, stderr) => {
+        if (err && shouldRetryWithoutCookies(opts, stderr)) {
+          return resolve(analyze(url, { ...opts, useCookies: false }));
+        }
         if (err) {
           const e = new Error(friendlyError(stderr || err.message));
           e.detail = String(stderr || err.message).slice(-4000);
@@ -297,7 +327,7 @@ class DownloadJob extends EventEmitter {
       return this;
     }
 
-    this.child = spawn(bin, this.buildArgs(), { windowsHide: true });
+    this.child = spawn(bin, this.buildArgs(), { windowsHide: true, env: processEnv() });
 
     this.#pipeLines(this.child.stdout, (line) => this.#handleLine(line));
     this.#pipeLines(this.child.stderr, (line) => {
@@ -316,6 +346,15 @@ class DownloadJob extends EventEmitter {
       if (code === 0) {
         this.emit('progress', { percent: 100, phase: 'done' });
         return this.emit('done', { filePath: this.filePath, canceled: false });
+      }
+      if (shouldRetryWithoutCookies(this.opts, this.stderrTail.join('\n'))) {
+        this.emit('log', 'Browser cookies were rejected, retrying without them…');
+        this.opts = { ...this.opts, useCookies: false };
+        this.stderrTail = [];
+        this.streamIndex = 0;
+        this.currentFile = null;
+        this.filePath = null;
+        return this.start();
       }
       const err = new Error(friendlyError(this.stderrTail.join('\n')));
       err.detail = this.stderrTail.join('\n').slice(-4000);
