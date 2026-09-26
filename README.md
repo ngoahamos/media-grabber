@@ -35,7 +35,7 @@ Prebuilt installers from GitHub Actions run `32272826659`:
 | Platform | Download |
 | --- | --- |
 | Windows | [Download for Windows](https://media-grabbler.s3.us-east-1.amazonaws.com/media-grabber-windows.zip) |
-| macOS | [Download for macOS](https://github.com/ngoahamos/media-grabber/actions/runs/36204997999/artifacts/10893204225) |
+| macOS | [apple silicon](https://media-grabbler.s3.us-east-1.amazonaws.com/Media+Grabber-1.0.0-arm64.dmg) [intel](https://media-grabbler.s3.us-east-1.amazonaws.com/Media+Grabber-1.0.0.dmg) |
 | Linux | [Download for Linux](https://github.com/ngoahamos/media-grabber/actions/runs/36204997999/artifacts/10893712180) |
 
 > These are unsigned CI builds. GitHub may require you to sign in, and workflow
